@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-12.26
+resolver: lts-13.0 # ghc-8.6.3
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -57,8 +57,14 @@ packages:
 # arch: x86_64
 #
 # Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
-# extra-lib-dirs: [/path/to/dir]
+extra-include-dirs: [/usr/local/opt/openssl/include]
+extra-lib-dirs: [/usr/local/opt/openssl/lib]
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+  # docker:
+  # enable: true
+  # repo: "fpco/stack-build"
+  # registry-login: true
+  # set-user: true

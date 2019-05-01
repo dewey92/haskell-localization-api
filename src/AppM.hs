@@ -1,26 +1,50 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module AppM where
 
-import Servant.Server
 import Control.Monad.Reader
 import Control.Monad.Except
+import Servant.Server
+import Database.MySQL.Simple
 import Data.Cache
 import Author.Capability.Database
-import Author.Instance.InMemoryDatabase
+import Author.Capability.InMemoryDatabase
 
 -- | TODO: Change Env
-type Env = String
+data Env = Env
+  { authorDbConn :: Cache Int AuthorEntity
+  , ganteng :: String
+  , dbConn :: Connection
+  }
 
-newtype AppM a = AppM { unAppM :: ReaderT Env Handler a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadError ServantErr)
+useDefaultEnv :: IO Env
+useDefaultEnv = do
+  cacheInstance <- newCache Nothing
+  dbConn <- connect defaultConnectInfo
+    { connectUser = "root"
+    , connectPassword = "root"
+    , connectDatabase = "loclz"
+    , connectPort = 3308
+    }
+  return Env
+    { authorDbConn = cacheInstance
+    , dbConn = dbConn
+    , ganteng = "Jihad"
+    }
+
+type AppM = ReaderT Env Handler
 
 -- | Grant `AppM` the capabilities to access Author Database. I'm using -XTypeApplications
 -- | so that the implementation can be extracted to another file instead of
--- | polluting in this file. It would be just too long and will become unreadable if put here
+-- | polluting in this file. It would be too long and will become unreadable if put here
 -- | since the purpose of this module is just to define all capabilities of `AppM`
 instance AuthorMonadDb AppM where
-  register a = liftIO . unInMemory . register @InMemory a
-  login a = liftIO . unInMemory . login @InMemory a
-  findAuthorByEmail = liftIO . unInMemory . findAuthorByEmail @InMemory
+  type Conn AppM = (Cache Int AuthorEntity)
+  register conn email password =
+    liftIO $ unInMemory (register @InMemory conn email password)
+  login conn email password =
+    liftIO $ unInMemory (login @InMemory conn email password)
+  findAuthorByEmail conn email =
+    liftIO $ unInMemory (findAuthorByEmail @InMemory conn email)

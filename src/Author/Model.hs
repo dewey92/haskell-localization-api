@@ -14,8 +14,8 @@ import GHC.Generics
 import Data.Aeson
 
 data Author = MkAuthor
-  { authorName :: Maybe String
-  , authorEmail :: Email
+  { authorEmail :: Email
+  , authorName :: Maybe String
   } deriving (Eq, Generic)
 
 instance ToJSON Author
