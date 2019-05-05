@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Author.Capability.Database where
@@ -6,7 +5,7 @@ module Author.Capability.Database where
 import GHC.Generics
 import Data.Aeson
 import Servant.Server (Handler)
-import Author.Model
+import Author.Types
 
 -- | Real data stored in database
 data AuthorEntity = MkAuthorEntity
@@ -32,8 +31,6 @@ instance Show AuthorDbErrors where
   show OperationFailed = "Operation failed"
 
 -- | This capability represents the ability to manage authors or users in the system
-class Monad m => AuthorMonadDb m where
-  type Conn m
-  register :: Conn m -> Email -> Password -> m (Either AuthorDbErrors AuthorEntity)
-  login :: Conn m -> Email -> Password -> m (Either AuthorDbErrors AuthorEntity)
-  findAuthorByEmail :: Conn m -> Email -> m (Maybe AuthorEntity)
+class (Monad m) => MonadAuthorDb m where
+  createAuthor :: Email -> Password -> m (Either AuthorDbErrors AuthorEntity)
+  findAuthorByEmail :: Email -> m (Maybe AuthorEntity)

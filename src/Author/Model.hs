@@ -1,39 +1,56 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
+-- | Model is where all the business logics happen
 
-module Author.Model
-  ( Author (..)
-  , Email (..)
-  , Password
-  , showEmail
-  , mkPassword
-  , showPassword
-  ) where
+module Author.Model where
 
-import GHC.Generics
-import Data.Aeson
+import Control.Monad.Reader
+import Control.Monad.Identity
+import Types
+import Author.Types
+import Author.Capability.Database
 
-data Author = MkAuthor
-  { authorEmail :: Email
-  , authorName :: Maybe String
-  } deriving (Eq, Generic)
+registerAction
+  :: (MonadAuthorDb m)
+  => Email
+  -> Password
+  -> m (Either AuthorDbErrors AuthorEntity)
+registerAction email' password' = do
+  maybeAuthor <- findAuthorByEmail email'
+  case maybeAuthor of
+    (Just _) -> return $ Left EmailAlreadyExists
+    Nothing -> createAuthor email' password'
 
-instance ToJSON Author
-instance FromJSON Author
+loginAction
+  :: (MonadAuthorDb m)
+  => Email
+  -> Password
+  -> m (Either AuthorDbErrors AuthorEntity)
+loginAction email' password' = do
+  maybeAuthor <- findAuthorByEmail email'
+  return $ case maybeAuthor of
+    Nothing -> Left EmailNotExists
+    (Just authorInDb) ->
+      if password authorInDb /= password'
+      then Left EmailAndPasswordNotMatch
+      else Right authorInDb
 
--- | Email newtype
-newtype Email = Email String deriving (Eq, ToJSON, FromJSON)
+-- | Test
+data Lol = Lol { _dbTest :: String }
 
-showEmail :: Email -> String
-showEmail (Email e) = e
+newtype TestM a = TestM (Identity a)
+  deriving (Functor, Applicative, Monad)
 
--- | Password newtype
-newtype Password = Password String deriving (Eq)
+instance MonadAuthorDb TestM where
+  createAuthor _ _ = return $ Left EmailAlreadyExists
+  findAuthorByEmail _ = return Nothing
 
-mkPassword :: String -> Maybe Password
-mkPassword p
-  | length p < 8 = Nothing
-  | otherwise = Just $ Password p
-
-showPassword :: Password -> String
-showPassword (Password p) = p
+hasil :: TestM String
+hasil =
+  case mkPassword "hahaha" of
+    Nothing -> return "hehe"
+    (Just pw) -> loginAction (Email "aa@aa.com") pw >>= \case
+        (Left _) -> return "Left"
+        (Right _) -> return "Right"

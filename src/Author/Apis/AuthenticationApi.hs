@@ -8,13 +8,14 @@
 module Author.Apis.AuthenticationApi where
 
 import GHC.Generics
+import Control.Monad.Reader
 import Data.Aeson
 import Data.ByteString.Lazy.UTF8 as BLU
 import Servant
 import AppM
+import Author.Types
 import Author.Model
-import Author.Capability.Database
-import Control.Monad.Reader
+import Author.Capability.Database (AuthorEntity (..))
 
 -- | All authentication API types defined here
 type RegisterApi = "register"
@@ -40,12 +41,11 @@ instance ToJSON AuthorEntity where
     ]
 
 registerApi :: AuthPayload -> AppM AuthorEntity
-registerApi authPayload = do
-  conn <- asks authorDbConn
+registerApi authPayload =
   case mkPassword $ password (authPayload :: AuthPayload) of
     Nothing -> throwError $ err400 { errBody = "password not valid" }
     (Just password) -> do
-      result <- register conn validatedEmail password
+      result <- registerAction validatedEmail password
       case result of
         (Left e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
         (Right r) -> return r
@@ -53,12 +53,11 @@ registerApi authPayload = do
     validatedEmail = Email $ email (authPayload :: AuthPayload)
 
 loginApi :: AuthPayload -> AppM AuthorEntity
-loginApi authPayload = do
-  conn <- asks authorDbConn
+loginApi authPayload =
   case mkPassword $ password (authPayload :: AuthPayload) of
     Nothing -> throwError $ err400 { errBody = "password not valid" }
     (Just password) -> do
-      result <- login conn validatedEmail password
+      result <- loginAction validatedEmail password
       case result of
         (Left e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
         (Right r) -> return r

@@ -1,21 +1,25 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Author.Capability.MySQLDatabase where
+module Author.Capability.MySQLDatabase
+  ( createAuthor
+  , findAuthorByEmail
+  ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Data.Maybe
 import Database.MySQL.Simple
 import Database.MySQL.Simple.Param (Param)
 import Database.MySQL.Simple.Result (Result, convert)
 import Database.MySQL.Simple.QueryResults (QueryResults, convertResults, convertError)
-import Author.Capability.Database
-import Author.Model
+import Types
+import Author.Capability.Database (AuthorDbErrors(..), AuthorEntity(..))
+import Author.Types
 
 -- | Make Email type an instance of `Param` and `Result` so that it could be
 -- | converted from arbitrary DB record back to `Email` type and viceverca
@@ -36,40 +40,34 @@ instance QueryResults AuthorEntity where
       !updated_at' = convert f_updatedAt v_updatedAt
   convertResults fs vs = convertError fs vs 6
 
--- | AuthorDB using MySQL implementation
-newtype AuthorMySQL a = AuthorMySQL (IO a) deriving
-  (Functor, Applicative, Monad, MonadIO)
+ -- TODO: should commit in one transaction
+createAuthor
+  :: (MonadReader Env m, MonadIO m)
+  => Email
+  -> Password
+  -> m (Either AuthorDbErrors AuthorEntity)
+createAuthor emailInput passwordInput = runDB $ \conn -> do
+  liftIO $ execute
+    conn
+    "INSERT INTO users (email, password) VALUES (?,?)"
+    (emailInput, showPassword passwordInput)
+  findAuthorByEmail emailInput >>= \case
+    Nothing -> return $ Left OperationFailed
+    (Just newAuthor) -> return $ Right newAuthor
 
-instance AuthorMonadDb AuthorMySQL where
-  type Conn AuthorMySQL = Connection
+findAuthorByEmail
+  :: (MonadReader Env m, MonadIO m)
+  => Email
+  -> m (Maybe AuthorEntity)
+findAuthorByEmail emailInput = runDB $ \conn -> do
+  author <- liftIO $ query conn "SELECT * FROM users WHERE email = ?" (Only emailInput)
+  return $ case author of
+    [a] -> Just a
+    _ -> Nothing
 
-  register conn emailInput passwordInput = do
-    maybeAuthor <- findAuthorByEmail conn emailInput
-    case maybeAuthor of
-      (Just _) -> return $ Left EmailAlreadyExists
-      Nothing -> do
-        liftIO $ execute
-          conn
-          "INSERT INTO users (email, password) VALUES (?,?)"
-          (emailInput, showPassword passwordInput)
-        maybeNewAuthor <- findAuthorByEmail conn emailInput
-        return $ case maybeNewAuthor of
-          Nothing -> Left OperationFailed
-          (Just newAuthor) -> Right newAuthor
-
-  -- login
-  login conn emailInput passwordInput = do
-    maybeAuthor <- findAuthorByEmail conn emailInput
-    return $ case maybeAuthor of
-      Nothing -> Left EmailNotExists
-      (Just authorInDb) ->
-        if password authorInDb /= passwordInput
-        then Left EmailAndPasswordNotMatch
-        else Right authorInDb
-
-  -- findAuthorByEmail
-  findAuthorByEmail conn emailInput = do
-    author <- liftIO $ query conn "SELECT * FROM users WHERE email = ?" (Only emailInput)
-    return $ case author of
-      [a] -> Just a
-      _ -> Nothing
+-- | Inject the connection
+-- TODO: May fork the connection ??
+runDB :: (MonadReader Env m) => (Connection -> m r) -> m r
+runDB callback = do
+  conn <- asks dbConnection
+  callback conn
