@@ -1,13 +1,12 @@
 module Api where
 
+import Control.Monad.Reader
 import Servant
 import Servant.Server (serve)
 import Network.Wai.Handler.Warp (run)
-import Data.Cache
 import Types
 import AppM
 import Author.Apis (AuthorApis, authorApis)
-import Control.Monad.Reader
 
 -- | TODO: Add more routes
 type Apis = AuthorApis -- :<|> TranslationApis

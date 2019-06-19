@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 
 module Author.Capability.Database where
 
@@ -11,26 +12,13 @@ import Author.Types
 data AuthorEntity = MkAuthorEntity
   { author_id :: Int
   , email :: Email
-  , password :: Password
+  , password :: Password 'Hashed
   , fullname :: String
   , created_at :: String
   , updated_at :: String
   }
 
--- | All kinds of database errors dealing with Author's domain
-data AuthorDbErrors
-  = EmailAlreadyExists
-  | EmailAndPasswordNotMatch
-  | EmailNotExists
-  | OperationFailed
-
-instance Show AuthorDbErrors where
-  show EmailAlreadyExists = "Email already exists"
-  show EmailAndPasswordNotMatch = "Email and password don't match"
-  show EmailNotExists = "Email is not found in the system"
-  show OperationFailed = "Operation failed"
-
 -- | This capability represents the ability to manage authors or users in the system
 class (Monad m) => MonadAuthorDb m where
-  createAuthor :: Email -> Password -> m (Either AuthorDbErrors AuthorEntity)
+  createAuthor :: Email -> Password 'Hashed -> m (Maybe AuthorEntity)
   findAuthorByEmail :: Email -> m (Maybe AuthorEntity)

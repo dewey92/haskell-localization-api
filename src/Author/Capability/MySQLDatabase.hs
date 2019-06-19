@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 module Author.Capability.MySQLDatabase
   ( createAuthor
@@ -18,13 +18,8 @@ import Database.MySQL.Simple.Param (Param)
 import Database.MySQL.Simple.Result (Result, convert)
 import Database.MySQL.Simple.QueryResults (QueryResults, convertResults, convertError)
 import Types
-import Author.Capability.Database (AuthorDbErrors(..), AuthorEntity(..))
+import Author.Capability.Database (AuthorEntity(..))
 import Author.Types
-
--- | Make Email type an instance of `Param` and `Result` so that it could be
--- | converted from arbitrary DB record back to `Email` type and viceverca
-deriving instance Param Email
-deriving instance Result Email
 
 instance QueryResults AuthorEntity where
   convertResults
@@ -34,7 +29,7 @@ instance QueryResults AuthorEntity where
     where
       !author_id' = convert f_authorId v_id
       !email' = convert f_email v_email
-      !password' = fromJust <$> mkPassword $ convert f_pw v_pw -- Safe to coerce `Password` from DB
+      !password' = convert f_pw v_pw -- Safe to coerce `Password` from DB
       !fullname' = convert f_fullname v_fullname
       !created_at' = convert f_createdAt v_createdAt
       !updated_at' = convert f_updatedAt v_updatedAt
@@ -44,29 +39,27 @@ instance QueryResults AuthorEntity where
 createAuthor
   :: (MonadReader Env m, MonadIO m)
   => Email
-  -> Password
-  -> m (Either AuthorDbErrors AuthorEntity)
-createAuthor emailInput passwordInput = runDB $ \conn -> do
+  -> Password 'Hashed
+  -> m (Maybe AuthorEntity)
+createAuthor email' password' = runDB $ \conn -> do
   liftIO $ execute
     conn
     "INSERT INTO users (email, password) VALUES (?,?)"
-    (emailInput, showPassword passwordInput)
-  findAuthorByEmail emailInput >>= \case
-    Nothing -> return $ Left OperationFailed
-    (Just newAuthor) -> return $ Right newAuthor
+    (email', password')
+  findAuthorByEmail email'
 
 findAuthorByEmail
   :: (MonadReader Env m, MonadIO m)
   => Email
   -> m (Maybe AuthorEntity)
-findAuthorByEmail emailInput = runDB $ \conn -> do
-  author <- liftIO $ query conn "SELECT * FROM users WHERE email = ?" (Only emailInput)
+findAuthorByEmail email' = runDB $ \conn -> do
+  author <- liftIO $ query conn "SELECT * FROM users WHERE email = ?" (Only email')
   return $ case author of
     [a] -> Just a
     _ -> Nothing
 
 -- | Inject the connection
--- TODO: May fork the connection ??
+-- TODO: May move to `Types`?
 runDB :: (MonadReader Env m) => (Connection -> m r) -> m r
 runDB callback = do
   conn <- asks dbConnection

@@ -1,7 +1,6 @@
 module Types where
 
 import Database.MySQL.Simple
-import Data.Cache
 
 data Env = Env
   { dbConnection :: Connection
@@ -9,7 +8,6 @@ data Env = Env
 
 useDefaultEnv :: IO Env
 useDefaultEnv = do
-  cacheInstance <- newCache Nothing
   dbConn <- connect defaultConnectInfo
     { connectUser = "root"
     , connectPassword = "root"

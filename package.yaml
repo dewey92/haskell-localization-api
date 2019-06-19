@@ -26,13 +26,15 @@ dependencies:
 - servant
 - servant-server
 - servant-auth
-- cache
 - aeson
 - mtl
 - bytestring
 - utf8-string
 - transformers
 - mysql-simple
+- validation
+- regex-compat
+- lens
 
 library:
   source-dirs: src
