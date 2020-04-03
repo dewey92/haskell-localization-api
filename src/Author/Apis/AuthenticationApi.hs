@@ -28,19 +28,19 @@ type LoginApi = "login"
 registerApi :: AuthPayload -> AppM AuthorEntity
 registerApi authPayload =
   case validateAuthPayload authPayload of
-    (Failure e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
-    (Success vAuthPayload) -> do
+    Failure e -> throwError $ err400 { errBody = BLU.fromString $ show e }
+    Success vAuthPayload -> do
       result <- registerAction (vEmail vAuthPayload) (vPassword vAuthPayload)
       case result of
-        (Left e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
-        (Right r) -> return r
+        Left e -> throwError $ err400 { errBody = BLU.fromString $ show e }
+        Right r -> return r
 
 loginApi :: AuthPayload -> AppM AuthorEntity
 loginApi authPayload =
   case validateAuthPayload authPayload of
-    (Failure e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
-    (Success vAuthPayload) -> do
+    Failure e -> throwError $ err400 { errBody = BLU.fromString $ show e }
+    Success vAuthPayload -> do
       result <- loginAction (vEmail vAuthPayload) (vPassword vAuthPayload)
       case result of
-        (Left e) -> throwError $ err400 { errBody = BLU.fromString $ show e }
-        (Right r) -> return r
+        Left e -> throwError $ err400 { errBody = BLU.fromString $ show e }
+        Right r -> return r

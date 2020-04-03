@@ -59,6 +59,9 @@ newtype Password (s :: PasswordState) = Password String deriving Eq
 deriving instance Param (Password 'Hashed)
 deriving instance Result (Password 'Hashed)
 
+instance Show (Password ps) where
+  show _ = "[FILTERED]"
+
 validatePassword :: String -> Validation [AuthorValidationError] (Password 'Raw)
 validatePassword pw
   | null pw = _Failure # [PasswordEmpty]
@@ -74,12 +77,6 @@ secureHash = id
 
 hashPassword :: Password 'Raw -> Password 'Hashed
 hashPassword (Password r) = Password (secureHash r)
-
--- | Utils
-toMaybe :: Validation e a -> Maybe a
-toMaybe v = case v of
-  (Failure _) -> Nothing
-  (Success a) -> Just a
 
 --------------------------------------------------------------------------------
 -- Entity
@@ -140,3 +137,9 @@ instance Show AuthorValidationError where
   show PasswordEmpty = "Psasword should not be empty"
   show EmailEmpty    = "Email should not be empty"
   show EmailNotValid = "Not a valid email"
+
+-- | Utils
+toMaybe :: Validation e a -> Maybe a
+toMaybe v = case v of
+  (Failure _) -> Nothing
+  (Success a) -> Just a
