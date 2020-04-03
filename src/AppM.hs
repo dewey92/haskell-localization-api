@@ -1,21 +1,15 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module AppM where
 
-import Control.Monad.Reader
-import Servant.Server
-import Author.Capability.Database
-import qualified Author.Capability.MySQLDatabase as AuthorMySQL
-import Types
+import Control.Monad.Except (MonadError)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
+import Env (Env)
+import Servant.Server (Handler, ServantErr)
 
--- | TODO: Change Env
-type AppM = ReaderT Env Handler
+newtype AppM a = AppM (ReaderT Env Handler a) deriving
+  (Functor, Applicative, Monad, MonadReader Env, MonadIO, MonadError ServantErr)
 
--- | Grant `AppM` the capabilities to access Author Database. I'm using -XTypeApplications
--- | so that the implementation can be extracted to another file instead of
--- | polluting in this file. It would be too long and will become unreadable if put here
--- | since the purpose of this module is just to define all capabilities of `AppM`
-instance MonadAuthorDb AppM where
-  createAuthor = AuthorMySQL.createAuthor
-  findAuthorByEmail = AuthorMySQL.findAuthorByEmail
+runAppM :: Env -> AppM a -> Handler a
+runAppM env (AppM r) = runReaderT r env

@@ -1,47 +1,38 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 -- | Model is where all the business logics happen
 
 module Author.Model where
 
-import Control.Monad.Reader
-import Control.Monad.Identity
-import Types
 import Author.Types
-import Author.Capability.Database
-
--- | All kinds of database errors dealing with Author's domain
-data AuthorDbErrors
-  = EmailAlreadyExists
-  | EmailAndPasswordNotMatch
-  | EmailNotExists
-  | OperationFailed
-
-instance Show AuthorDbErrors where
-  show EmailAlreadyExists = "Email already exists"
-  show EmailAndPasswordNotMatch = "Email and password don't match"
-  show EmailNotExists = "Email is not found in the system"
-  show OperationFailed = "Operation failed"
+  ( AuthorEntity(..)
+  , AuthorErrors(..)
+  , Email
+  , Password
+  , PasswordState(..)
+  , hashPassword
+  )
+import Author.Capability.Database (ManageAuthor, createAuthor, findAuthorByEmail)
+import Control.Arrow (left)
 
 registerAction
-  :: (MonadAuthorDb m)
+  :: ManageAuthor m
   => Email
   -> Password 'Raw
-  -> m (Either AuthorDbErrors AuthorEntity)
+  -> m (Either AuthorErrors AuthorEntity)
 registerAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
   let hashedPw = hashPassword password'
   case maybeAuthor of
     (Just _) -> return $ Left EmailAlreadyExists
-    Nothing -> createAuthor email' hashedPw >>= return . \case
-      Nothing -> Left OperationFailed
-      (Just r) -> Right r
+    Nothing -> do
+      registredAuthor <- createAuthor email' hashedPw
+      return $ left OtherError registredAuthor
 
 loginAction
-  :: (MonadAuthorDb m)
+  :: ManageAuthor m
   => Email
   -> Password 'Raw
-  -> m (Either AuthorDbErrors AuthorEntity)
+  -> m (Either AuthorErrors AuthorEntity)
 loginAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
   let hashedPw = hashPassword password'

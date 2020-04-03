@@ -7,17 +7,15 @@
 
 module Author.Apis.AuthenticationApi where
 
-import GHC.Generics
-import Control.Monad.Reader
-import Data.Aeson hiding (Success)
-import Data.Validation
-import Data.ByteString.Lazy.UTF8 as BLU
-import Servant
-import AppM
-import Author.Types
+import AppM (AppM)
+import Author.Types (AuthorEntity)
+import Author.Apis.Data (AuthPayload(..), ValidatedAuthPayload(..), validateAuthPayload)
 import Author.Model
-import Author.Apis.Data
-import Author.Capability.Database (AuthorEntity (..))
+import Data.Aeson (FromJSON)
+import Data.ByteString.Lazy.UTF8 as BLU
+import Data.Validation
+import GHC.Generics (Generic)
+import Servant
 
 -- | All authentication API types defined here
 type RegisterApi = "register"
@@ -26,14 +24,6 @@ type RegisterApi = "register"
 type LoginApi = "login"
   :> ReqBody '[JSON] AuthPayload
   :> Post '[JSON] AuthorEntity
-
--- | Hide unneccessary fields on `AuthorEntity`
-instance ToJSON AuthorEntity where
-  toJSON entity = object
-    [ "author_id" .= author_id entity
-    , "email" .= email (entity :: AuthorEntity)
-    , "fullname" .= fullname entity
-    ]
 
 registerApi :: AuthPayload -> AppM AuthorEntity
 registerApi authPayload =

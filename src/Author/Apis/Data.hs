@@ -5,10 +5,17 @@
 module Author.Apis.Data where
 
 
-import GHC.Generics
-import Data.Aeson
-import Data.Validation
 import Author.Types
+  ( Email
+  , Password
+  , PasswordState(..)
+  , AuthorValidationError
+  , validateEmail
+  , validatePassword
+  )
+import Data.Aeson (FromJSON)
+import Data.Validation (Validation)
+import GHC.Generics (Generic)
 
 data AuthPayload = AuthPayload
   { email :: String
