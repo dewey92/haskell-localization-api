@@ -4,7 +4,6 @@
 
 module Author.Apis.Data where
 
-
 import Author.Types
   ( Email
   , Password

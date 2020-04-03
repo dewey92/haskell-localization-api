@@ -1,9 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Author.Apis.AuthenticationApi where
 
@@ -29,8 +27,8 @@ registerApi :: AuthPayload -> AppM AuthorEntity
 registerApi authPayload =
   case validateAuthPayload authPayload of
     Failure e -> throwError $ err400 { errBody = BLU.fromString $ show e }
-    Success vAuthPayload -> do
-      result <- registerAction (vEmail vAuthPayload) (vPassword vAuthPayload)
+    Success (ValidatedAuthPayload { vEmail, vPassword }) -> do
+      result <- registerAction vEmail vPassword
       case result of
         Left e -> throwError $ err400 { errBody = BLU.fromString $ show e }
         Right r -> return r
@@ -39,8 +37,8 @@ loginApi :: AuthPayload -> AppM AuthorEntity
 loginApi authPayload =
   case validateAuthPayload authPayload of
     Failure e -> throwError $ err400 { errBody = BLU.fromString $ show e }
-    Success vAuthPayload -> do
-      result <- loginAction (vEmail vAuthPayload) (vPassword vAuthPayload)
+    Success (ValidatedAuthPayload { vEmail, vPassword }) -> do
+      result <- loginAction vEmail vPassword
       case result of
         Left e -> throwError $ err400 { errBody = BLU.fromString $ show e }
         Right r -> return r
