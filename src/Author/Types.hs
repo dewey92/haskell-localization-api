@@ -22,7 +22,7 @@ module Author.Types
   ) where
 
 import Control.Lens ((#))
-import Data.Aeson (ToJSON, FromJSON, toJSON, object, (.=))
+import Data.Aeson (ToJSON, FromJSON, toJSON, parseJSON, object, (.=))
 import Data.Maybe (Maybe(..), fromJust, isNothing)
 import Database.MySQL.Simple.Param (Param)
 import Database.MySQL.Simple.Result (Result, convert)
@@ -35,9 +35,16 @@ import Text.Regex (mkRegex, matchRegex)
 -- Email
 --------------------------------------------------------------------------------
 newtype Email = Email { unEmail :: String  }
-  deriving (Eq, Generic, ToJSON, FromJSON)
+  deriving (Eq, Generic, ToJSON)
   deriving Param via String
   deriving Result via String
+
+instance FromJSON Email where
+  parseJSON raw = do
+    str <- parseJSON raw
+    case validateEmail str of
+      Failure f -> fail $ show f
+      Success email -> return email
 
 validateEmail :: String -> Validation [AuthorValidationError] Email
 validateEmail em
@@ -53,29 +60,36 @@ mkEmail = toMaybe . validateEmail
 --------------------------------------------------------------------------------
 -- Password
 --------------------------------------------------------------------------------
-data PasswordState = Raw | Hashed
+data PasswordState = Plain | Hashed
 
 newtype Password (s :: PasswordState) = Password String deriving Eq
 deriving instance Param (Password 'Hashed)
 deriving instance Result (Password 'Hashed)
 
+instance FromJSON (Password 'Plain) where
+  parseJSON raw = do
+    str <- parseJSON raw
+    case validatePassword str of
+      Failure f -> fail $ show f
+      Success pw -> return pw
+
 instance Show (Password ps) where
   show _ = "[FILTERED]"
 
-validatePassword :: String -> Validation [AuthorValidationError] (Password 'Raw)
+validatePassword :: String -> Validation [AuthorValidationError] (Password 'Plain)
 validatePassword pw
   | null pw = _Failure # [PasswordEmpty]
   | length pw < 8 = _Failure # [PasswordTooShort]
   | otherwise = _Success # Password pw
 
-mkPassword :: String -> Maybe (Password 'Raw)
+mkPassword :: String -> Maybe (Password 'Plain)
 mkPassword = toMaybe . validatePassword
 
 -- | TODO: implement hash
 secureHash :: String -> String
 secureHash = id
 
-hashPassword :: Password 'Raw -> Password 'Hashed
+hashPassword :: Password 'Plain -> Password 'Hashed
 hashPassword (Password r) = Password (secureHash r)
 
 --------------------------------------------------------------------------------

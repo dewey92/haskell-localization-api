@@ -17,7 +17,7 @@ import Control.Arrow (left)
 registerAction
   :: ManageAuthor m
   => Email
-  -> Password 'Raw
+  -> Password 'Plain
   -> m (Either AuthorErrors AuthorEntity)
 registerAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
@@ -31,7 +31,7 @@ registerAction email' password' = do
 loginAction
   :: ManageAuthor m
   => Email
-  -> Password 'Raw
+  -> Password 'Plain
   -> m (Either AuthorErrors AuthorEntity)
 loginAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
