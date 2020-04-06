@@ -1,13 +1,13 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Author.Apis
-  ( module Author.Apis.AuthenticationApi
+module Ciliwung.Author.Apis
+  ( module Ciliwung.Author.Apis.AuthenticationApi
   , AuthorApis
   , authorApis
   ) where
 
 import Servant
-import Author.Apis.AuthenticationApi
+import Ciliwung.Author.Apis.AuthenticationApi
 
 type AuthorApis = RegisterApi :<|> LoginApi
 

@@ -1,16 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Author.Capability.Database where
+module Ciliwung.Author.Capability.ManageAuthor where
 
-import AppM (AppM)
-import Author.Types (Email, AuthorEntity(..), Password, PasswordState(..))
+import Ciliwung.AppM (AppM)
+import Ciliwung.Author.Types (Email, AuthorEntity(..), Password, PasswordState(..))
+import Ciliwung.Env (Env, dbConnection)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (MonadReader, asks)
 import Database.MySQL.Simple (Connection, Only(..), execute, query)
-import Env (Env, dbConnection)
 
 class Monad m => ManageAuthor m where
   createAuthor :: Email -> Password 'Hashed -> m (Either String AuthorEntity)

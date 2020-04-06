@@ -1,8 +1,8 @@
-module Api where
+module Ciliwung.Api where
 
-import AppM (runAppM)
-import Author.Apis (AuthorApis, authorApis)
-import Env (Env, useDefaultEnv)
+import Ciliwung.AppM (runAppM)
+import Ciliwung.Author.Apis (AuthorApis, authorApis)
+import Ciliwung.Env (Env, useDefaultEnv)
 import Network.Wai.Handler.Warp (run)
 import Servant (Application, Proxy(..), serve, hoistServer)
 

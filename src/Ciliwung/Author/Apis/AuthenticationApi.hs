@@ -2,12 +2,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Author.Apis.AuthenticationApi where
+module Ciliwung.Author.Apis.AuthenticationApi where
 
-import AppM (AppM)
-import Author.Types (AuthorEntity)
-import Author.Apis.Data (AuthPayload(..))
-import Author.Model
+import Ciliwung.AppM (AppM)
+import Ciliwung.Author.Types (AuthorEntity)
+import Ciliwung.Author.Apis.Data (AuthPayload(..))
+import Ciliwung.Author.Model
 import Data.Aeson (FromJSON)
 import Data.ByteString.Lazy.UTF8 as BLU
 import Data.Validation

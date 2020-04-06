@@ -2,9 +2,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
-module Author.Apis.Data where
+module Ciliwung.Author.Apis.Data where
 
-import Author.Types
+import Ciliwung.Author.Types
   ( Email
   , Password
   , PasswordState(..)

@@ -8,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Author.Types
+module Ciliwung.Author.Types
   ( Email
   , PasswordState(..)
   , Password
