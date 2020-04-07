@@ -1,19 +1,14 @@
 module Ciliwung.Env where
 
-import Database.MySQL.Simple as MySQL
+import Database.Selda.PostgreSQL (PGConnectInfo, on, auth)
 
 data Env = Env
-  { dbConnection :: MySQL.Connection
+  { dbConnection :: PGConnectInfo
   }
 
 useDefaultEnv :: IO Env
 useDefaultEnv = do
-  dbConn <- MySQL.connect defaultConnectInfo
-    { MySQL.connectUser = "root"
-    , MySQL.connectPassword = "root"
-    , MySQL.connectDatabase = "loclz"
-    , MySQL.connectPort = 3308
-    }
+  let dbConn = "ciliwung" `on` "http://localhost:5432" `auth` ("root", "")
   return Env
     { dbConnection = dbConn
     }

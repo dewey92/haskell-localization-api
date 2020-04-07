@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Ciliwung.Author.Apis
   ( module Ciliwung.Author.Apis.AuthenticationApi
   , AuthorApis

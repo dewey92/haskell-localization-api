@@ -1,22 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Ciliwung.Author.Types
   ( Email
   , PasswordState(..)
   , Password
-  , AuthorEntity(..)
   , AuthorErrors(..)
   , AuthorValidationError(..)
   , validateEmail
-  , mkPassword
   , validatePassword
   , hashPassword
   ) where
@@ -24,20 +16,24 @@ module Ciliwung.Author.Types
 import Control.Lens ((#))
 import Data.Aeson (ToJSON, FromJSON, toJSON, parseJSON, object, (.=))
 import Data.Maybe (Maybe(..), fromJust, isNothing)
-import Database.MySQL.Simple.Param (Param)
-import Database.MySQL.Simple.Result (Result, convert)
-import Database.MySQL.Simple.QueryResults (QueryResults, convertResults, convertError)
 import Data.Validation (_Success, _Failure, Validation(..))
+import Data.Text (Text, pack, unpack)
+import Database.Selda.SqlType (SqlType, SqlTypeRep(..), SqlValue(..), Lit(..), mkLit, defaultValue, fromSql)
 import GHC.Generics (Generic)
 import Text.Regex (mkRegex, matchRegex)
 
 --------------------------------------------------------------------------------
 -- Email
 --------------------------------------------------------------------------------
-newtype Email = Email { unEmail :: String  }
-  deriving (Eq, Generic, ToJSON)
-  deriving Param via String
-  deriving Result via String
+newtype Email = Email { unEmail :: Text  }
+  deriving (Eq, Show, Read, Generic, ToJSON)
+
+instance SqlType Email where
+  mkLit (Email e) = LCustom TText . LText $ e
+  defaultValue = LCustom TText . LText $ mempty
+  fromSql = \case
+    SqlString s -> Email s
+    _           -> error $ "fromSql: bad email string"
 
 instance FromJSON Email where
   parseJSON raw = do
@@ -50,21 +46,24 @@ validateEmail :: String -> Validation [AuthorValidationError] Email
 validateEmail em
   | null em = _Failure # [EmailEmpty]
   | isNothing $ matchRegex regexEmail em = _Failure # [EmailNotValid]
-  | otherwise = _Success # Email em
+  | otherwise = _Success # Email (pack em)
   where
     regexEmail = mkRegex "^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*$"
-
-mkEmail :: String -> Maybe Email
-mkEmail = toMaybe . validateEmail
 
 --------------------------------------------------------------------------------
 -- Password
 --------------------------------------------------------------------------------
 data PasswordState = Plain | Hashed
 
-newtype Password (s :: PasswordState) = Password String deriving Eq
-deriving instance Param (Password 'Hashed)
-deriving instance Result (Password 'Hashed)
+newtype Password (s :: PasswordState) = Password Text
+  deriving Eq
+
+instance SqlType (Password 'Hashed) where
+  mkLit (Password p) = LCustom TText . LText $ p
+  defaultValue = LCustom TText . LText $ mempty
+  fromSql = \case
+    SqlString p -> Password p
+    _           -> error $ "fromSql: bad password string"
 
 instance FromJSON (Password 'Plain) where
   parseJSON raw = do
@@ -80,51 +79,14 @@ validatePassword :: String -> Validation [AuthorValidationError] (Password 'Plai
 validatePassword pw
   | null pw = _Failure # [PasswordEmpty]
   | length pw < 8 = _Failure # [PasswordTooShort]
-  | otherwise = _Success # Password pw
-
-mkPassword :: String -> Maybe (Password 'Plain)
-mkPassword = toMaybe . validatePassword
+  | otherwise = _Success # Password (pack pw)
 
 -- | TODO: implement hash
-secureHash :: String -> String
+secureHash :: Text -> Text
 secureHash = id
 
 hashPassword :: Password 'Plain -> Password 'Hashed
 hashPassword (Password r) = Password (secureHash r)
-
---------------------------------------------------------------------------------
--- Entity
---------------------------------------------------------------------------------
--- | Real data stored in database, might be moved to Capability.Database
-data AuthorEntity = MkAuthorEntity
-  { author_id :: Int
-  , email :: Email
-  , password :: Password 'Hashed
-  , fullname :: String
-  , created_at :: String
-  , updated_at :: String
-  }
-
-instance QueryResults AuthorEntity where
-  convertResults
-    [f_authorId, f_email, f_pw, f_fullname, f_createdAt, f_updatedAt] -- `f` stands for `field`
-    [v_id, v_email, v_pw, v_fullname, v_createdAt, v_updatedAt]
-    = MkAuthorEntity author_id' email' password' fullname' created_at' updated_at'
-    where
-      !author_id' = convert f_authorId v_id
-      !email' = convert f_email v_email
-      !password' = convert f_pw v_pw -- Safe to coerce `Password` from DB
-      !fullname' = convert f_fullname v_fullname
-      !created_at' = convert f_createdAt v_createdAt
-      !updated_at' = convert f_updatedAt v_updatedAt
-  convertResults fs vs = convertError fs vs 6
-
-instance ToJSON AuthorEntity where
-  toJSON entity = object
-    [ "author_id" .= author_id entity
-    , "email" .= email entity
-    , "fullname" .= fullname entity
-    ]
 
 --------------------------------------------------------------------------------
 -- Errors

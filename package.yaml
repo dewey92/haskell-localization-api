@@ -31,14 +31,32 @@ dependencies:
 - bytestring
 - utf8-string
 - transformers
-- mysql-simple
+- exceptions
 - validation
 - regex-compat
 - lens
+- mysql
 - beam-core
 - beam-mysql
 - beam-migrate
 - text
+- selda
+- selda-postgresql
+
+default-extensions:
+  - DataKinds
+  - DeriveGeneric
+  - FlexibleInstances
+  - FlexibleContexts
+  - FunctionalDependencies
+  - KindSignatures
+  - LambdaCase
+  - MultiParamTypeClasses
+  - OverloadedStrings
+  - OverloadedLabels
+  - StandaloneDeriving
+  - TypeApplications
+  - TypeOperators
 
 library:
   source-dirs: src

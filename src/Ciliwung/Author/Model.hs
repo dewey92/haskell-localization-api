@@ -1,23 +1,21 @@
-{-# LANGUAGE DataKinds #-}
-
 module Ciliwung.Author.Model where
 
 import Ciliwung.Author.Types
-  ( AuthorEntity(..)
-  , AuthorErrors(..)
+  ( AuthorErrors(..)
   , Email
   , Password
   , PasswordState(..)
   , hashPassword
   )
 import Ciliwung.Author.Capability.ManageAuthor (ManageAuthor, createAuthor, findAuthorByEmail)
+import Ciliwung.Database (Author(..))
 import Control.Arrow (left)
 
 registerAction
   :: ManageAuthor m
   => Email
   -> Password 'Plain
-  -> m (Either AuthorErrors AuthorEntity)
+  -> m (Either AuthorErrors Author)
 registerAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
   let hashedPw = hashPassword password'
@@ -31,7 +29,7 @@ loginAction
   :: ManageAuthor m
   => Email
   -> Password 'Plain
-  -> m (Either AuthorErrors AuthorEntity)
+  -> m (Either AuthorErrors Author)
 loginAction email' password' = do
   maybeAuthor <- findAuthorByEmail email'
   let hashedPw = hashPassword password'
