@@ -8,7 +8,7 @@ data Env = Env
 
 useDefaultEnv :: IO Env
 useDefaultEnv = do
-  let dbConn = "ciliwung" `on` "http://localhost:5432" `auth` ("root", "")
+  let dbConn = "ciliwung" `on` "localhost" `auth` ("root", "")
   return Env
     { dbConnection = dbConn
     }

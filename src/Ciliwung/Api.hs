@@ -9,10 +9,9 @@ import Servant (Application, Proxy(..), serve, hoistServer)
 -- | TODO: Add more routes
 type Apis = AuthorApis -- :<|> TranslationApis
 
-allApis = authorApis -- :<|> translationApis
+proxyApis = Proxy @Apis
 
-proxyApis :: Proxy Apis
-proxyApis = Proxy
+allApis = authorApis -- :<|> translationApis
 
 app :: Env -> Application
 app env = serve proxyApis $ hoistServer proxyApis (runAppM env) allApis

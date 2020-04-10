@@ -25,12 +25,12 @@ import Text.Regex (mkRegex, matchRegex)
 --------------------------------------------------------------------------------
 -- Email
 --------------------------------------------------------------------------------
-newtype Email = Email { unEmail :: Text  }
+newtype Email = Email Text
   deriving (Eq, Show, Read, Generic, ToJSON)
 
 instance SqlType Email where
-  mkLit (Email e) = LCustom TText . LText $ e
-  defaultValue = LCustom TText . LText $ mempty
+  mkLit (Email e) = LCustom TText $ LText e
+  defaultValue = LCustom TText $ LText mempty
   fromSql = \case
     SqlString s -> Email s
     _           -> error $ "fromSql: bad email string"
@@ -48,7 +48,7 @@ validateEmail em
   | isNothing $ matchRegex regexEmail em = _Failure # [EmailNotValid]
   | otherwise = _Success # Email (pack em)
   where
-    regexEmail = mkRegex "^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*$"
+    regexEmail = mkRegex "^[_a-zA-Z0-9-]+(\\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$"
 
 --------------------------------------------------------------------------------
 -- Password
@@ -59,8 +59,8 @@ newtype Password (s :: PasswordState) = Password Text
   deriving Eq
 
 instance SqlType (Password 'Hashed) where
-  mkLit (Password p) = LCustom TText . LText $ p
-  defaultValue = LCustom TText . LText $ mempty
+  mkLit (Password p) = LCustom TText $ LText p
+  defaultValue = LCustom TText $ LText mempty
   fromSql = \case
     SqlString p -> Password p
     _           -> error $ "fromSql: bad password string"
@@ -104,13 +104,14 @@ instance Show AuthorErrors where
   show (OtherError msg)   = msg
 
 data AuthorValidationError
-  = PasswordTooShort
-  | PasswordEmpty
+  = PasswordEmpty
+  | PasswordTooShort
   | EmailEmpty
   | EmailNotValid
 
 instance Show AuthorValidationError where
   show PasswordEmpty = "Psasword should not be empty"
+  show PasswordTooShort = "Password show be longer than 8 chars"
   show EmailEmpty    = "Email should not be empty"
   show EmailNotValid = "Not a valid email"
 

@@ -5,7 +5,7 @@ module Ciliwung.Author.Apis.AuthenticationApi where
 import Ciliwung.AppM (AppM)
 import Ciliwung.Database (Author)
 import Ciliwung.Author.Apis.Data (AuthPayload(..))
-import Ciliwung.Author.Model
+import Ciliwung.Author.Model (registerAction, loginAction)
 import Data.Aeson (FromJSON)
 import Data.ByteString.Lazy.UTF8 as BLU
 import Data.Validation
