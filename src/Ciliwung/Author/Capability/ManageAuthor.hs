@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Ciliwung.Author.Capability.ManageAuthor where
 
 import Ciliwung.AppM (AppM)

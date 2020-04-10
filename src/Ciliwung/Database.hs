@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Ciliwung.Database where
 

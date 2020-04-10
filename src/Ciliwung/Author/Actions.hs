@@ -1,4 +1,4 @@
-module Ciliwung.Author.Model where
+module Ciliwung.Author.Actions where
 
 import Ciliwung.Author.Types
   ( AuthorErrors(..)
@@ -16,13 +16,13 @@ registerAction
   => Email
   -> Password 'Plain
   -> m (Either AuthorErrors Author)
-registerAction email' password' = do
-  maybeAuthor <- findAuthorByEmail email'
-  let hashedPw = hashPassword password'
+registerAction email password = do
+  maybeAuthor <- findAuthorByEmail email
+  let hashedPw = hashPassword password
   case maybeAuthor of
     Just _ -> return $ Left EmailAlreadyExists
     Nothing -> do
-      registredAuthor <- createAuthor email' hashedPw
+      registredAuthor <- createAuthor email hashedPw
       return $ left OtherError registredAuthor
 
 loginAction
@@ -30,8 +30,8 @@ loginAction
   => Email
   -> Password 'Plain
   -> m (Either AuthorErrors Author)
-loginAction email' password' = do
-  maybeAuthor <- findAuthorByEmail email'
+loginAction email password' = do
+  maybeAuthor <- findAuthorByEmail email
   let hashedPw = hashPassword password'
   return $ case maybeAuthor of
     Nothing -> Left EmailNotExists
